@@ -6,6 +6,13 @@ const TOKEN = process.env.TOKEN;
 
 const prefix = '!';
 
+const strSkills = [] 
+const dexSkills = []
+const conSkills = []
+const intSkills = []
+const wisSkills = []
+const chaSkills = []
+
 var players = new Map();
 
 bot.login(TOKEN);
@@ -23,18 +30,29 @@ bot.on('ready', () => {
 bot.on('message', msg => {
     if (msg.author.bot) return;
     if (!msg.content.startsWith(prefix)) return;
-    const cB = (msg+"").toLowerCase.content.slice(prefix.length);
+   // console.log(msg);
+    const cB = msg.content.toLowerCase().slice(prefix.length);
     const args = cB.split(' ');
 
     //create a new charictor
     if (args[0] === 'addchar') {
         players.set(args[1], new Player(args[1]));
-        msg.channel.send("created player " + args[1]);
+        msg.channel.send("created character " + args[1]);
+        return;
+    }
+
+    //remove a charictor
+    if (args[0] === 'yeetchar') {
+        players.delete(args[1]);
+        msg.channel.send("yeeted player " + args[1] +" out of existance");
         return;
     }
 
     //eddit and override a stat
     if (args[0] === 'edit') {
+        if(args[3] == 'skills' || args[3] ==='proficiencies'){
+            return;
+        }
         try {
             players.get(args[1]).edit(args[2], args[3]);
             msg.channel.send(args[2] + " is now " + players.get(args[1]).get(args[2]));
@@ -46,6 +64,9 @@ bot.on('message', msg => {
 
     //add to a stat
     if (args[0] === 'add') {
+        if(args[3] == 'skills' || args[3] ==='proficiencies'){
+            return;
+        }
         try {
             players.get(args[1]).add(args[2], args[3]);
 
@@ -67,6 +88,30 @@ bot.on('message', msg => {
         return;
     }
 
+    //todo addskill    addprof
+    //todo make edit filterout edit or add skill or prof
+    if(args[0] === 'addskill'){
+        try {
+            players.get(args[1]).addToArray(('skills'), args[2]);
+
+            msg.channel.send('Skills are now'+ players.get(args[1]).get('skills'));
+        } catch (error) {
+            msg.channel.send("There is an error\nInput format is addskill [character] [skill name]");
+        }
+        return;
+    }
+
+    if(args[0] === 'addprof'){
+        try {
+            players.get(args[1]).addToArray('proficiencies', args[2]);
+
+            msg.channel.send('Proficiencies are now'+ players.get(args[1]).get('proficiencies'));
+        } catch (error) {
+            msg.channel.send("There is an error\nInput format is addprof [character] [addprof name]");
+        }
+        return;
+    }
+
     //get all of the stats
     if (args[0] === 'sheet') {
         try {
@@ -77,14 +122,14 @@ bot.on('message', msg => {
             full = full.concat("Level: " + ply.get("level") + "\n");
             full = full.concat("HP: " + ply.get("hp") + "\n");
             full = full.concat("AC: " + ply.get("ac") + "\n\n");
-            full = full.concat("Str: " + ply.get("str") + "\n");
-            full = full.concat("Dex: " + ply.get("dex") + "\n");
-            full = full.concat("Con: " + ply.get("con") + "\n");
-            full = full.concat("Int: " + ply.get("int") + "\n");
-            full = full.concat("Wis: " + ply.get("wis") + "\n");
-            full = full.concat("Cha: " + ply.get("cha") + "\n\n");
-            full = full.concat("Proficiency Skills: " + ply.get("skill proff") + "\n");
-            full = full.concat("Other Proficiencies: " + ply.get("nonskill proff"));
+            full = full.concat("Str: " + ply.get("str") + ": " +Math.floor((ply.get("str")-10)/2)+ "\n");
+            full = full.concat("Dex: " + ply.get("dex") + ": " +Math.floor((ply.get("dex")-10)/2)+"\n");
+            full = full.concat("Con: " + ply.get("con") + ": " +Math.floor((ply.get("con")-10)/2)+"\n");
+            full = full.concat("Int: " + ply.get("int") + ": " +Math.floor((ply.get("int")-10)/2)+"\n");
+            full = full.concat("Wis: " + ply.get("wis") + ": " +Math.floor((ply.get("wis")-10)/2)+"\n");
+            full = full.concat("Cha: " + ply.get("cha") + ": " +Math.floor((ply.get("cha")-10)/2)+"\n\n");
+            full = full.concat("Proficiency Skills: " + ply.get("skills") + "\n");
+            full = full.concat("Other Proficiencies: " + ply.get("proficiencies"));
             msg.channel.send(full);
            // console.log(full);
         } catch (error) {
@@ -106,7 +151,7 @@ bot.on('message', msg => {
 
     }
 
-    msg.channel.send("commands are\n!addchar !edit !add !stat !sheet\ntype !help for descriptions");
+    msg.channel.send("commands are\n!addchar !edit !add !stat !sheet !addskill !addprof\ntype !help for descriptions");
     return;
 });
 
@@ -127,8 +172,8 @@ class Player {
         this.stats.set("int", 10);
         this.stats.set("wis", 10);
         this.stats.set("cha", 10);
-        this.stats.set("skill proff", [null]);
-        this.stats.set("nonskill proff", [null]);
+        this.stats.set("skills", [null]);
+        this.stats.set("proficiencies", [null]);
     }
 
     edit(name, val) {
@@ -142,6 +187,10 @@ class Player {
         } else {
             this.stats.set(name, parseInt(hold) + parseInt(val));
         }
+    }
+
+    addToArray(name,val){
+            this.stats.get(name).push(val);
     }
 
     get(name) {
